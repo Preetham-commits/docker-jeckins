@@ -6,12 +6,13 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Checkout your GitHub repository
-                git 'https://github.com/Preetham-commits/docker-jeckins.git'  // Replace with your GitHub URL
-            }
-        }
+       stage('Checkout') {
+		    steps {
+		        script {
+		            git credentialsId: 'github-credentials', url: 'https://github.com/Preetham-commits/docker-jeckins.git', branch: 'main'
+		        }
+		    }
+		}
 
         stage('Build Maven Project') {
             steps {
