@@ -6,19 +6,19 @@ pipeline {
     }
 
     stages {
-       stage('Checkout') {
-		    steps {
-		        script {
-		            git credentialsId: 'github-credentials', url: 'https://github.com/Preetham-commits/docker-jeckins.git', branch: 'main'
-		        }
-		    }
-		}
+        stage('Checkout') {
+            steps {
+                script {
+                    git credentialsId: 'github-credentials', url: 'https://github.com/Preetham-commits/docker-jeckins.git', branch: 'main'
+                }
+            }
+        }
 
         stage('Build Maven Project') {
             steps {
                 script {
-                    // Run Maven to build the project
-                    sh 'mvn clean install'
+                    // Run Maven to build the project (skip tests for faster builds)
+                    bat 'mvn clean install -DskipTests'
                 }
             }
         }
@@ -26,9 +26,9 @@ pipeline {
         stage('Docker Login') {
             steps {
                 script {
-                    // Login to Docker Hub
+                    // Login to Docker Hub (Fixed Windows syntax issue)
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin'
                     }
                 }
             }
@@ -38,7 +38,7 @@ pipeline {
             steps {
                 script {
                     // Build Docker image from Dockerfile
-                    sh 'docker build -t preethamkarra97/my-app:latest .'  // Replace with your Docker image name
+                    bat 'docker build -t preethamkarra97/my-app:latest .'  // Replace with your Docker image name
                 }
             }
         }
@@ -47,7 +47,7 @@ pipeline {
             steps {
                 script {
                     // Push Docker image to Docker Hub
-                    sh 'docker push preethamkarra97/my-app:latest'  // Replace with your Docker image name
+                    bat 'docker push preethamkarra97/my-app:latest'  // Replace with your Docker image name
                 }
             }
         }
@@ -55,7 +55,7 @@ pipeline {
 
     post {
         always {
-            // Clean up after the pipeline execution
+            // Clean up workspace after pipeline execution
             cleanWs()
         }
     }
