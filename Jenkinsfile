@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_CREDENTIALS = credentials('dockerhub-credentials')  // Use the ID of your DockerHub credentials
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -17,8 +13,9 @@ pipeline {
         stage('Build Maven Project') {
             steps {
                 script {
-                    // Run Maven to build the project (skip tests for faster builds)
-                    bat 'mvn clean install -DskipTests'
+                    catchError(buildResult: 'FAILURE') {
+                        bat 'mvn clean verify -DskipTests'
+                    }
                 }
             }
         }
@@ -26,9 +23,10 @@ pipeline {
         stage('Docker Login') {
             steps {
                 script {
-                    // Login to Docker Hub (Fixed Windows syntax issue)
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin'
+                    catchError(buildResult: 'FAILURE') {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                            bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin'
+                        }
                     }
                 }
             }
@@ -37,8 +35,9 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    // Build Docker image from Dockerfile
-                    bat 'docker build -t preethamkarra97/my-app:latest .'  // Replace with your Docker image name
+                    catchError(buildResult: 'FAILURE') {
+                        bat 'docker build -t preethamkarra97/my-app:latest .'
+                    }
                 }
             }
         }
@@ -46,8 +45,9 @@ pipeline {
         stage('Docker Push') {
             steps {
                 script {
-                    // Push Docker image to Docker Hub
-                    bat 'docker push preethamkarra97/my-app:latest'  // Replace with your Docker image name
+                    catchError(buildResult: 'FAILURE') {
+                        bat 'docker push preethamkarra97/my-app:latest'
+                    }
                 }
             }
         }
@@ -55,8 +55,14 @@ pipeline {
 
     post {
         always {
-            // Clean up workspace after pipeline execution
-            cleanWs()
+            script {
+                // Clean up workspace after pipeline execution
+                cleanWs()
+
+                // Remove dangling images to save space
+                bat 'docker rmi preethamkarra97/my-app:latest || echo "Image deletion failed (ignoring error)"'
+                bat 'docker system prune -f || echo "Docker prune failed (ignoring error)"'
+            }
         }
     }
 }
