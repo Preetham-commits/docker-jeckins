@@ -38,13 +38,7 @@ pipeline {
             steps {
                 script {
                     catchError(buildResult: 'FAILURE') {
-                        bat '''
-                        if not exist Dockerfile (
-                            echo "Dockerfile not found! Exiting..."
-                            exit /b 1
-                        )
-                        docker build -t preethamkarra97/my-app:latest .
-                        '''
+                        bat 'docker build -t preethamkarra97/my-app:latest .'
                     }
                 }
             }
