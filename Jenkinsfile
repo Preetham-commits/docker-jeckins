@@ -21,16 +21,14 @@ pipeline {
         }
 
         stage('Docker Login') {
-            steps {
-                script {
-                    catchError(buildResult: 'FAILURE') {
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                            bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin'
-                        }
-                    }
-                }
-            }
-        }
+		    steps {
+		        script {
+		            withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+		                bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin || exit 1'
+		            }
+		        }
+		    }
+		}
 
         stage('Docker Build') {
             steps {
