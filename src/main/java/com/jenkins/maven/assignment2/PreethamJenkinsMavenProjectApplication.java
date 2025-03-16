@@ -11,7 +11,7 @@ public class PreethamJenkinsMavenProjectApplication {
         SpringApplication.run(PreethamJenkinsMavenProjectApplication.class, args);
 
         LocalTime currentTime = LocalTime.now();
-        String name = "Teena Abraham"; 
+        String name = "Preetham Karra"; 
 
         String greeting;
         if (currentTime.isBefore(LocalTime.NOON)) {
