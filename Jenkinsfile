@@ -14,27 +14,37 @@ pipeline {
             steps {
                 script {
                     catchError(buildResult: 'FAILURE') {
-                        bat 'mvn clean verify -DskipTests'
+                        bat 'mvn clean package -DskipTests'
                     }
                 }
             }
         }
 
         stage('Docker Login') {
-		    steps {
-		        script {
-		            withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-		                bat 'echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin || exit 1'
-		            }
-		        }
-		    }
-		}
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        bat '''
+                        echo Logging into Docker Hub...
+                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        if %ERRORLEVEL% NEQ 0 exit /b 1
+                        '''
+                    }
+                }
+            }
+        }
 
         stage('Docker Build') {
             steps {
                 script {
                     catchError(buildResult: 'FAILURE') {
-                        bat 'docker build -t preethamkarra97/my-app:latest .'
+                        bat '''
+                        if not exist Dockerfile (
+                            echo "Dockerfile not found! Exiting..."
+                            exit /b 1
+                        )
+                        docker build -t preethamkarra97/my-app:latest .
+                        '''
                     }
                 }
             }
@@ -54,12 +64,13 @@ pipeline {
     post {
         always {
             script {
-                // Clean up workspace after pipeline execution
                 cleanWs()
 
-                // Remove dangling images to save space
-                bat 'docker rmi preethamkarra97/my-app:latest || echo "Image deletion failed (ignoring error)"'
-                bat 'docker system prune -f || echo "Docker prune failed (ignoring error)"'
+                // Clean up unused Docker images (optional)
+                bat '''
+                echo "Removing local Docker image..."
+                docker rmi preethamkarra97/my-app:latest || echo "Image deletion failed (ignoring error)"
+                '''
             }
         }
     }
